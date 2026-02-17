@@ -26,3 +26,4 @@ mongoose.connect(process.env.MONGO_URI)
     });
 })
 .catch(err => console.log("Mongo Error:", err));
+app.use("/api/compliance", require("./routes/complianceRoutes"));
