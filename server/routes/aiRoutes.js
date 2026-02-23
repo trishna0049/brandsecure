@@ -6,3 +6,12 @@ const { simplifyLegalText } = require("../controllers/aiController");
 router.post("/simplify", authMiddleware, simplifyLegalText);
 
 module.exports = router;
+const upload = require("../middleware/pdfUploadMiddleware");
+const { analyzeTrademarkObjection } = require("../controllers/aiController");
+
+router.post(
+    "/analyze-objection",
+    authMiddleware,
+    upload.single("file"),
+    analyzeTrademarkObjection
+);

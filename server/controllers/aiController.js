@@ -1,5 +1,6 @@
 const openai = require("../config/openai");
 const AiLog = require("../models/AiLog");
+const pdf = require("pdf-parse");
 
 // AI Legal Simplifier
 exports.simplifyLegalText = async (req, res) => {
@@ -72,5 +73,55 @@ ${legalText}
     } catch (error) {
         console.error("SIMPLIFIER ERROR:", error);
         res.status(500).json({ message: error.message });
+    }
+};
+exports.analyzeTrademarkObjection = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "PDF file is required" });
+        }
+
+        const pdfData = await pdf(req.file.buffer);
+        const extractedText = pdfData.text;
+
+        const prompt = `
+        You are a trademark legal assistant for Indian startups.
+
+        Analyze this trademark objection notice and provide:
+
+        1. Summary of the objection
+        2. Why the objection was raised
+        3. Legal basis (if identifiable)
+        4. Suggested response strategy
+        5. Risk level (Low / Medium / High)
+
+        Objection Notice:
+        ${extractedText}
+        `;
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: "You analyze Indian trademark objections." },
+                { role: "user", content: prompt }
+            ]
+        });
+
+        const result = response.choices[0].message.content;
+
+        // Log AI usage
+        await AiLog.create({
+            userId: req.user.id,
+            type: "trademark_objection_analysis",
+            inputLength: extractedText.length
+        });
+
+        res.json({
+            analysis: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Trademark analysis failed" });
     }
 };
