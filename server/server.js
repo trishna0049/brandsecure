@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 
 dotenv.config();
+require("./utils/reminderCron");
 
 const app = express();
 
@@ -28,3 +29,4 @@ mongoose.connect(process.env.MONGO_URI)
 .catch(err => console.log(err));
 app.use("/api/onboarding", require("./routes/onboardingRoutes"));
 app.use("/api/ai", require("./routes/aiRoutes"));
+app.use("/api/documents", require("./routes/documentRoutes"));
