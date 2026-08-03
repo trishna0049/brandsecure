@@ -4,29 +4,31 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 
 dotenv.config();
-require("./utils/reminderCron");
+
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
-app.use(cors());
+// CORS
+app.use(cors({
+  origin: "http://localhost:3000"
+}));
+
 app.use(express.json());
 
-// 🔥 AUTH ROUTE (IMPORTANT)
-app.use("/api/auth", require("./routes/authRoutes"));
+// ROUTES
+app.use("/api/auth", authRoutes);
 
-// TEST ROUTE
 app.get("/", (req, res) => {
-    res.send("API is running...");
+  res.send("API is running...");
 });
 
+// DATABASE + SERVER START
 mongoose.connect(process.env.MONGO_URI)
-.then(() => {
+  .then(() => {
     console.log("MongoDB Connected");
     app.listen(process.env.PORT, () => {
-        console.log(`Server running on port ${process.env.PORT}`);
+      console.log(`Server running on port ${process.env.PORT}`);
     });
-})
-.catch(err => console.log(err));
-app.use("/api/onboarding", require("./routes/onboardingRoutes"));
-app.use("/api/ai", require("./routes/aiRoutes"));
-app.use("/api/documents", require("./routes/documentRoutes"));
+  })
+  .catch(err => console.log(err));

@@ -1,77 +1,116 @@
 const Compliance = require("../models/Compliance");
 const { calculateRisk } = require("../utils/riskCalculator");
 
-// Create Compliance Task
+
+// ===============================
+// CREATE COMPLIANCE
+// ===============================
 exports.createCompliance = async (req, res) => {
-    try {
-        const { category, title, deadline, requiredDocuments } = req.body;
+  try {
+    const { category, title, deadline, requiredDocuments } = req.body;
 
-        const riskLevel = calculateRisk(deadline);
+    const riskLevel = calculateRisk(deadline);
 
-        const compliance = await Compliance.create({
-            userId: req.user.id,
-            category,
-            title,
-            deadline,
-            requiredDocuments,
-            riskLevel
-        });
+    const compliance = await Compliance.create({
+      userId: req.user.id,
+      category,
+      title,
+      deadline,
+      requiredDocuments,
+      riskLevel,
+      status: "Not Started"
+    });
 
-        res.status(201).json(compliance);
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
-    }
+    res.status(201).json(compliance);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
-// Get All Compliance for Logged User
-exports.getCompliances = async (req, res) => {
-    try {
-        const compliances = await Compliance.find({
-            userId: req.user.id
-        });
 
-        const completed = compliances.filter(c => c.status === "Completed").length;
-        const total = compliances.length;
+// ===============================
+// GET ALL COMPLIANCES (FOR USER)
+// ===============================
+exports.getCompliance = async (req, res) => {
+  try {
+    const compliances = await Compliance.find({
+      userId: req.user.id
+    });
 
-        const score = total === 0 ? 0 : Math.round((completed / total) * 100);
+    const completed = compliances.filter(
+      c => c.status === "Completed"
+    ).length;
 
-        res.json({
-            complianceScore: score,
-            totalTasks: total,
-            data: compliances
-        });
+    const total = compliances.length;
 
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
-    }
+    const score =
+      total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    res.json({
+      complianceScore: score,
+      totalTasks: total,
+      data: compliances
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
-// Update Status
+
+// ===============================
+// UPDATE COMPLIANCE STATUS
+// ===============================
 exports.updateCompliance = async (req, res) => {
-    try {
-        const compliance = await Compliance.findById(req.params.id);
+  try {
+    const compliance = await Compliance.findById(req.params.id);
 
-        if (!compliance) {
-            return res.status(404).json({ message: "Not Found" });
-        }
-
-        compliance.status = req.body.status;
-
-        await compliance.save();
-
-        res.json(compliance);
-
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
+    if (!compliance) {
+      return res.status(404).json({ message: "Not Found" });
     }
+
+    // Optional: ensure user owns task
+    if (compliance.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    compliance.status = req.body.status;
+
+    await compliance.save();
+
+    res.json(compliance);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
-// Delete Compliance
+
+// ===============================
+// DELETE COMPLIANCE
+// ===============================
 exports.deleteCompliance = async (req, res) => {
-    try {
-        await Compliance.findByIdAndDelete(req.params.id);
-        res.json({ message: "Deleted Successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
+  try {
+    const compliance = await Compliance.findById(req.params.id);
+
+    if (!compliance) {
+      return res.status(404).json({ message: "Not Found" });
     }
+
+    if (compliance.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    await compliance.deleteOne();
+
+    res.json({ message: "Deleted Successfully" });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };

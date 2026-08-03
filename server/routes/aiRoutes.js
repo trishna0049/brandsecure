@@ -1,17 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../middleware/authMiddleware");
-const { simplifyLegalText } = require("../controllers/aiController");
 
+const authMiddleware = require("../middleware/authMiddleware");
+const upload = require("../middleware/pdfUploadMiddleware");
+
+const {
+  simplifyLegalText,
+  analyzeTrademarkObjection
+} = require("../controllers/aiController");
+
+// AI Text Simplification Route
 router.post("/simplify", authMiddleware, simplifyLegalText);
 
-module.exports = router;
-const upload = require("../middleware/pdfUploadMiddleware");
-const { analyzeTrademarkObjection } = require("../controllers/aiController");
-
+// Trademark Objection PDF Analysis
 router.post(
-    "/analyze-objection",
-    authMiddleware,
-    upload.single("file"),
-    analyzeTrademarkObjection
+  "/analyze-objection",
+  authMiddleware,
+  upload.single("file"),
+  analyzeTrademarkObjection
 );
+
+module.exports = router;
