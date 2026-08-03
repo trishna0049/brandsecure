@@ -1,7 +1,6 @@
 const openai = require("../config/openai");
 const AiLog = require("../models/AiLog");
 const pdf = require("pdf-parse");
-console.log("OPENAI KEY:", process.env.OPENAI_API_KEY);
 // AI Legal Simplifier
 exports.simplifyLegalText = async (req, res) => {
     try {

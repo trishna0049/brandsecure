@@ -465,7 +465,7 @@ const Quiz = ({ onComplete }) => {
     if (step < QUIZ_QUESTIONS.length - 1) {
       setTimeout(() => setStep(s => s + 1), 300);
     } else {
-      setTimeout(() => onComplete(next["q1"] || "pre-revenue"), 300);
+      setTimeout(() => onComplete(next), 300);
     }
   };
 
@@ -729,14 +729,51 @@ const TasksPage = ({ tasks, setTasks, stage }) => {
       return a.title.localeCompare(b.title);
     });
 
-  const toggle = (id) => setTasks(ts => ts.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  const remove = (id) => setTasks(ts => ts.filter(t => t.id !== id));
-  const addTask = () => {
-    if (!newTask.title || !newTask.deadline) return;
-    setTasks(ts => [...ts, { ...newTask, id: Date.now(), completed: false }]);
-    setNewTask({ title: "", category: "Compliance", risk: "medium", deadline: "", desc: "" });
-    setShowAdd(false);
+  const toggle = async (id) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const newStatus = task.status === "Completed" ? "Not Started" : "Completed";
+    setTasks(ts => ts.map(t => t.id === id ? { ...t, status: newStatus, completed: newStatus === "Completed" } : t));
+    try {
+      await API.put(`/api/compliance/${id}`, { status: newStatus });
+    } catch (err) {
+      alert("Failed to update task");
+    }
   };
+  const remove = async (id) => {
+    try {
+      await API.delete(`/api/compliance/${id}`);
+      setTasks(ts => ts.filter(t => t.id !== id));
+    } catch (err) {
+      alert("Failed to delete task");
+    }
+  };
+  const addTask = async () => {
+    if (!newTask.title || !newTask.deadline) return;
+    try {
+      const res = await API.post("/api/compliance", {
+        category: newTask.category,
+        title: newTask.title,
+        deadline: newTask.deadline,
+      });
+      setTasks(ts => [...ts, taskFromApi(res.data)]);
+      setNewTask({ title: "", category: "Compliance", risk: "medium", deadline: "", desc: "" });
+      setShowAdd(false);
+    } catch (err) {
+      alert("Failed to add task");
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await API.get("/api/compliance");
+        setTasks((res.data?.data || []).map(taskFromApi));
+      } catch (err) {
+        console.error("Failed to load tasks:", err);
+      }
+    })();
+  }, []);
 
   const inputStyle = {
     width: "100%", padding: "9px 12px", border: "1.5px solid var(--border)",
@@ -1336,19 +1373,65 @@ const makeDefaultTasks = (stage) => {
   }));
 };
 
+const taskFromApi = (c) => ({
+  id: c._id,
+  title: c.title,
+  category: c.category,
+  risk: (c.riskLevel || "").toLowerCase(),
+  deadline: new Date(c.deadline).toISOString().split("T")[0],
+  status: c.status,
+  completed: c.status === "Completed",
+  desc: Array.isArray(c.requiredDocuments) ? c.requiredDocuments.join(", ") : "",
+  aiGenerated: false,
+});
+
 function BrandSecureApp() {
   const [screen, setScreen] = useState("login"); // login | quiz | app
   const [page, setPage] = useState("dashboard");
   const [stage, setStage] = useState("pre-revenue");
   const [tasks, setTasks] = useState([]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await API.get("/api/compliance");
+        setTasks((res.data?.data || []).map(taskFromApi));
+        setScreen("app");
+      } catch (err) {
+        localStorage.removeItem("token");
+        setScreen("login");
+      }
+    })();
+  }, []);
+
   const handleLogin = () => setScreen("quiz");
-  const handleQuiz = (detectedStage) => {
-    setStage(detectedStage);
-    setTasks(makeDefaultTasks(detectedStage));
-    setScreen("app");
+  const handleQuiz = async (answers) => {
+    try {
+      const res = await API.post("/api/onboarding", {
+        businessType: answers.q2 || "",
+        state: "",
+        employees: answers.q3 || "",
+        revenueStage: answers.q1 || "pre-revenue",
+      });
+      setTasks((res.data?.tasks || []).map(taskFromApi));
+      setStage(answers.q1 || "pre-revenue");
+      setScreen("app");
+    } catch (err) {
+      console.error("ONBOARDING ERROR:", err);
+      setTasks(makeDefaultTasks(answers.q1 || "pre-revenue"));
+      setStage(answers.q1 || "pre-revenue");
+      setScreen("app");
+    }
   };
-  const handleLogout = () => { setScreen("login"); setPage("dashboard"); };
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setScreen("login");
+    setPage("dashboard");
+    setTasks([]);
+  };
 
   if (screen === "login") return (<><GlobalStyle /><Login onLogin={handleLogin} /></>);
   if (screen === "quiz") return (<><GlobalStyle /><Quiz onComplete={handleQuiz} /></>);

@@ -6,6 +6,10 @@ const cors = require("cors");
 dotenv.config();
 
 const authRoutes = require("./routes/authRoutes");
+const onboardingRoutes = require("./routes/onboardingRoutes");
+const complianceRoutes = require("./routes/complianceRoutes");
+const documentRoutes = require("./routes/documentRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 const app = express();
 
@@ -18,9 +22,19 @@ app.use(express.json());
 
 // ROUTES
 app.use("/api/auth", authRoutes);
+app.use("/api/onboarding", onboardingRoutes);
+app.use("/api/compliance", complianceRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
+});
+
+// GLOBAL ERROR HANDLER
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: "Server error" });
 });
 
 // DATABASE + SERVER START
