@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import API from "@/lib/api";
-import { Icon } from "./common";
+import { Icon, PasswordInput } from "./common";
 
 const Login = ({ onLogin }) => {
   const [tab, setTab] = useState("login");
@@ -96,7 +96,8 @@ const submit = async () => {
         </div>
         <div style={{ marginBottom: 22 }}>
           <label style={{ fontSize: 12.5, color: "rgba(255,255,255,0.5)", display: "block", marginBottom: 6 }}>Password</label>
-          <input type="password" style={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••"
+          <PasswordInput inputStyle={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••"
+            autoComplete={tab === "login" ? "current-password" : "new-password"}
             onFocus={e => e.target.style.borderColor = "var(--accent)"}
             onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.12)"} />
         </div>

@@ -1,13 +1,50 @@
 const openai = require("../config/openai");
 const Compliance = require("../models/Compliance");
-const { calculateRisk } = require("../utils/riskCalculator");
+const User = require("../models/User");
+const { schedule } = require("../utils/deadlineEngine");
+
+const list = (arr) => (Array.isArray(arr) && arr.length ? arr.join(", ") : "None");
 
 exports.generateRoadmap = async (req, res) => {
     try {
-        const { businessType, state, employees, revenueStage } = req.body;
+        const {
+            businessType, state, employees, revenueStage, funding,
+            businessStart, registrationDate, industry, assets, goal
+        } = req.body;
+
+        // Persist the full onboarding profile so it can personalize future
+        // tasks, dashboard content, deadlines, AI recommendations and reminders.
+        await User.findByIdAndUpdate(req.user.id, {
+            profile: {
+                stage: revenueStage || "pre-revenue",
+                legalStatus: businessType || "",
+                teamSize: employees || "",
+                funding: funding || "",
+                businessStart: businessStart || "",
+                registrationDate: registrationDate ? new Date(registrationDate) : undefined,
+                state: state || "",
+                industry: industry || "",
+                assets: Array.isArray(assets) ? assets : [],
+                goal: goal || ""
+            }
+        });
 
         const prompt = `
-Generate a compliance checklist.
+You are a startup legal compliance assistant for Indian startup founders.
+
+Use the founder's profile below to build a personalized, prioritized compliance checklist.
+
+PROFILE:
+- Business / Company Stage: ${revenueStage || ""}
+- Legal Status: ${businessType || ""}
+- Time Working on Startup: ${businessStart || ""}
+- Registration Date: ${registrationDate || ""}
+- Primary State of Operation: ${state || ""}
+- Industry: ${industry || ""}
+- Team Size: ${employees || ""}
+- Funding Status: ${funding || ""}
+- Already Owns: ${list(assets)}
+- Primary Goal: ${goal || ""}
 
 Return JSON in this EXACT format:
 
@@ -16,16 +53,17 @@ Return JSON in this EXACT format:
     {
       "category": "string",
       "title": "string",
-      "deadlineSuggestion": "YYYY-MM-DD",
       "requiredDocuments": ["doc1", "doc2"]
     }
   ]
 }
 
-Business Type: ${businessType}
-State: ${state}
-Employees: ${employees}
-Revenue Stage: ${revenueStage}
+CREATE A ROADMAP:
+- Tailor tasks to the founder's "${goal}" and "${revenueStage}" stage. If goal is "Register my business", prioritize incorporation plus PAN/TAN/GST. If "Launch my product", prioritize business setup and contracts. If "Raise funding", prioritize cap table and founder agreements. If "Protect my brand", prioritize trademark. If "Hire employees", prioritize payroll and labour compliance.
+- Use the state "${state}" to include state-specific requirements (e.g., Shops & Establishments registration).
+- Skip tasks the founder already owns based on these details: ${list(assets)}. Only include follow-up obligations for owned items (e.g., GST return filing if a GST Registration is already owned).
+- Category must be one of: Formation, Registration, Tax, Finance, HR, Trademark, Compliance, Agreements.
+- Do NOT include any dates or deadlines — they are assigned separately.
 
 IMPORTANT:
 - Return ONLY JSON
@@ -65,18 +103,24 @@ IMPORTANT:
             return res.status(500).json({ message: "AI response format incorrect" });
         }
 
+        // Compute realistic, profile-based deadlines and risk levels.
+        const scheduled = schedule(tasks, {
+            legalStatus: businessType,
+            registrationDate,
+            businessStart,
+            stage: revenueStage
+        });
+
         const savedTasks = [];
 
-        for (let task of tasks) {
-            const riskLevel = calculateRisk(task.deadlineSuggestion);
-
+        for (const task of scheduled) {
             const compliance = await Compliance.create({
                 userId: req.user.id,
                 category: task.category,
                 title: task.title,
-                deadline: task.deadlineSuggestion,
+                deadline: task.deadline,
                 requiredDocuments: task.requiredDocuments,
-                riskLevel
+                riskLevel: task.riskLevel
             });
 
             savedTasks.push(compliance);

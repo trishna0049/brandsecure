@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import API from "@/lib/api";
+import { PasswordInput } from "./common";
 
 // ─── THEME & GLOBAL STYLES ───────────────────────────────────────────────────
 const GlobalStyle = () => (
@@ -188,6 +189,7 @@ const STAGE_TASKS = {
 const QUIZ_QUESTIONS = [
   {
     id: "q1",
+    type: "select",
     question: "What best describes where your startup is right now?",
     options: [
       { value: "pre-idea", label: "Still Exploring", desc: "I have a general interest but no specific idea yet" },
@@ -199,9 +201,10 @@ const QUIZ_QUESTIONS = [
   },
   {
     id: "q2",
+    type: "select",
     question: "Is your company legally incorporated?",
     options: [
-      { value: "no", label: "Not yet", desc: "We haven't registered formally" },
+      { value: "no", label: "Not Registered Yet", desc: "We haven't formally registered" },
       { value: "sole", label: "Sole Proprietorship", desc: "Running as an individual" },
       { value: "llp", label: "LLP", desc: "Limited Liability Partnership" },
       { value: "pvt", label: "Pvt. Ltd.", desc: "Private Limited Company" },
@@ -209,6 +212,7 @@ const QUIZ_QUESTIONS = [
   },
   {
     id: "q3",
+    type: "select",
     question: "What's your team size?",
     options: [
       { value: "solo", label: "Solo Founder", desc: "Just me!" },
@@ -219,6 +223,7 @@ const QUIZ_QUESTIONS = [
   },
   {
     id: "q4",
+    type: "select",
     question: "Have you raised external funding?",
     options: [
       { value: "none", label: "Bootstrapped", desc: "Self-funded only" },
@@ -227,6 +232,90 @@ const QUIZ_QUESTIONS = [
       { value: "vc", label: "Seed / Series A+", desc: "Institutional venture capital" },
     ],
   },
+  {
+    id: "q5",
+    type: "select",
+    question: "When did you start working on your startup?",
+    options: [
+      { value: "lt-1m", label: "Less than 1 month ago", desc: "Just getting started" },
+      { value: "1-3m", label: "1–3 months ago", desc: "Early days" },
+      { value: "3-6m", label: "3–6 months ago", desc: "Gaining momentum" },
+      { value: "6-12m", label: "6–12 months ago", desc: "Established routine" },
+      { value: "gt-1y", label: "More than 1 year ago", desc: "Long-running effort" },
+    ],
+  },
+  {
+    id: "registerDate",
+    type: "date",
+    question: "When was your business registered?",
+    sub: "Select the official date of incorporation or registration.",
+    visible: (a) => a.q2 !== "no",
+  },
+  {
+    id: "state",
+    type: "state",
+    question: "Which state does your startup primarily operate in?",
+    sub: "Search for your state or union territory.",
+  },
+  {
+    id: "industry",
+    type: "select",
+    question: "Which industry best describes your startup?",
+    options: [
+      { value: "saas", label: "SaaS / Software" },
+      { value: "ai", label: "AI / Machine Learning" },
+      { value: "fintech", label: "FinTech" },
+      { value: "healthtech", label: "HealthTech" },
+      { value: "edtech", label: "EdTech" },
+      { value: "ecommerce", label: "E-commerce" },
+      { value: "marketplace", label: "Marketplace" },
+      { value: "manufacturing", label: "Manufacturing" },
+      { value: "food-beverage", label: "Food & Beverage" },
+      { value: "consulting", label: "Consulting / Services" },
+      { value: "media", label: "Media & Content" },
+      { value: "other", label: "Other" },
+    ],
+  },
+  {
+    id: "assets",
+    type: "multi",
+    question: "Which of the following do you already have?",
+    sub: "Select all that apply.",
+    options: [
+      { value: "pan", label: "PAN" },
+      { value: "tan", label: "TAN" },
+      { value: "gst", label: "GST Registration" },
+      { value: "udyam", label: "UDYAM / MSME Registration" },
+      { value: "startup-india", label: "Startup India Recognition" },
+      { value: "trademark", label: "Trademark Registration" },
+      { value: "bank", label: "Business Current Account" },
+      { value: "none", label: "None of the Above" },
+    ],
+  },
+  {
+    id: "goal",
+    type: "select",
+    question: "What is your primary goal right now?",
+    options: [
+      { value: "register", label: "Register my business" },
+      { value: "compliance", label: "Complete legal compliances" },
+      { value: "launch", label: "Launch my product" },
+      { value: "funding", label: "Raise funding" },
+      { value: "brand", label: "Protect my brand" },
+      { value: "hire", label: "Hire employees" },
+      { value: "stay-compliant", label: "Stay compliant" },
+    ],
+  },
+];
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa",
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
+  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
+  "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi (NCT)", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
 ];
 
 const STAGE_LABELS = {
@@ -341,20 +430,24 @@ const Sidebar = ({ page, setPage, stage, onLogout }) => {
   const stageInfo = STAGE_LABELS[stage] || STAGE_LABELS["pre-revenue"];
   return (
     <aside style={{
-      width: 230, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 100,
+      width: 256, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 100,
       background: "var(--ink)", display: "flex", flexDirection: "column",
       padding: "28px 0 24px",
     }}>
       {/* Logo */}
       <div style={{ padding: "0 22px 24px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minWidth: 0 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, background: "var(--accent)",
             display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
           }}>
             <Icon name="shield" size={20} color="#fff" />
           </div>
-          <span style={{ fontFamily: "var(--ff-head)", fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: -0.5 }}>
+          <span style={{
+            fontFamily: "var(--ff-head)", fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: -0.5,
+            minWidth: 0, whiteSpace: "nowrap",
+          }}>
             Brand<span style={{ color: "var(--accent)" }}>Secure</span>
           </span>
         </div>
@@ -455,18 +548,84 @@ const Topbar = ({ title, subtitle, tasks }) => {
 const Quiz = ({ onComplete }) => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [hover, setHover] = useState(null);
-  const q = QUIZ_QUESTIONS[step];
-  const progress = ((step + 1) / QUIZ_QUESTIONS.length) * 100;
+  const [search, setSearch] = useState("");
+  const [showList, setShowList] = useState(false);
 
-  const select = (val) => {
-    const next = { ...answers, [q.id]: val };
-    setAnswers(next);
-    if (step < QUIZ_QUESTIONS.length - 1) {
-      setTimeout(() => setStep(s => s + 1), 300);
+  const visible = QUIZ_QUESTIONS.filter(qq => (typeof qq.visible === "function" ? qq.visible(answers) : true));
+  const q = visible[step];
+  const total = Math.max(visible.length, 1);
+  const progress = ((step + 1) / total) * 100;
+
+  const isReady = (qq, ans) => {
+    const v = ans[qq.id];
+    if (qq.type === "multi") return Array.isArray(v) && v.length > 0;
+    return v !== undefined && v !== null && v !== "";
+  };
+
+  const choose = (id, val) => {
+    setAnswers(a => ({ ...a, [id]: val }));
+  };
+
+  const toggleMulti = (id, val) => {
+    setAnswers(a => {
+      const cur = a[id] ? [...a[id]] : [];
+      if (val === "none") {
+        return { ...a, [id]: cur.includes("none") ? [] : ["none"] };
+      }
+      let arr = cur.filter(v => v !== "none");
+      arr = arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val];
+      return { ...a, [id]: arr };
+    });
+  };
+
+  const goNext = () => {
+    if (!isReady(q, answers)) return;
+    if (step < visible.length - 1) {
+      setStep(step + 1);
+      setSearch("");
+      setShowList(false);
     } else {
-      setTimeout(() => onComplete(next), 300);
+      onComplete(answers);
     }
+  };
+
+  const goBack = () => {
+    if (step > 0) {
+      setStep(step - 1);
+      setSearch("");
+      setShowList(false);
+    }
+  };
+
+  const selected = answers[q.id];
+  const filteredStates = INDIAN_STATES.filter(s => s.toLowerCase().includes(search.toLowerCase()));
+  const stateDisplay = search !== "" ? search : (selected || "");
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isFirst = step === 0;
+  const ready = isReady(q, answers);
+
+  const optionBtn = (opt) => {
+    const multi = q.type === "multi";
+    const on = multi ? (selected || []).includes(opt.value) : selected === opt.value;
+    return (
+      <button key={opt.value} className="quiz-opt"
+        onClick={() => multi ? toggleMulti(q.id, opt.value) : choose(q.id, opt.value)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "13px 16px", border: "1.5px solid rgba(255,255,255,0.1)",
+          borderRadius: 12, background: on ? "rgba(232,80,10,0.15)" : "rgba(255,255,255,0.04)",
+          cursor: "pointer", transition: "all 0.18s", textAlign: "left",
+          borderColor: on ? "var(--accent)" : undefined,
+        }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{opt.label}</div>
+          {opt.desc && <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{opt.desc}</div>}
+        </div>
+        {on
+          ? <Icon name="check" size={16} color="#E8500A" />
+          : <Icon name={multi ? "plus" : "chevronRight"} size={16} color="rgba(255,255,255,0.35)" />}
+      </button>
+    );
   };
 
   return (
@@ -476,6 +635,16 @@ const Quiz = ({ onComplete }) => {
     }}>
       <style>{`
         .quiz-opt:hover { transform: translateX(4px); border-color: var(--accent) !important; }
+        .qz-input {
+          width: 100%; padding: 13px 16px; border-radius: 12; border: 1.5px solid rgba(255,255,255,0.14);
+          background: rgba(255,255,255,0.05); color: #fff; font-size: 14.5; font-family: var(--ff-body);
+          outline: none; transition: all 0.18s;
+        }
+        .qz-input:focus { border-color: var(--accent); }
+        .qz-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }
+        .qz-state-list { max-height: 220px; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+        .qz-state-list::-webkit-scrollbar { width: 5px; }
+        .qz-state-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
       `}</style>
 
       {/* Logo */}
@@ -500,32 +669,105 @@ const Quiz = ({ onComplete }) => {
             <div style={{ height: "100%", width: `${progress}%`, background: "var(--accent)", borderRadius: 10, transition: "width 0.4s ease" }} />
           </div>
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", whiteSpace: "nowrap" }}>
-            {step + 1} / {QUIZ_QUESTIONS.length}
+            {step + 1} / {total}
           </span>
         </div>
 
-        <h2 style={{ fontFamily: "var(--ff-head)", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 24, lineHeight: 1.3 }}>
+        <h2 style={{ fontFamily: "var(--ff-head)", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 6, lineHeight: 1.3 }}>
           {q.question}
         </h2>
+        {q.sub && (
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 20 }}>{q.sub}</p>
+        )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {q.options.map(opt => (
-            <button key={opt.value} className="quiz-opt"
-              onClick={() => select(opt.value)}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 18px", border: "1.5px solid rgba(255,255,255,0.1)",
-                borderRadius: 12, background: answers[q.id] === opt.value ? "rgba(232,80,10,0.15)" : "rgba(255,255,255,0.04)",
-                cursor: "pointer", transition: "all 0.18s", textAlign: "left",
-                borderColor: answers[q.id] === opt.value ? "var(--accent)" : undefined,
-              }}>
-              <div>
-                <div style={{ fontSize: 14.5, fontWeight: 600, color: "#fff", marginBottom: 2 }}>{opt.label}</div>
-                <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)" }}>{opt.desc}</div>
+        <div key={q.id} style={{ animation: "fadeIn 0.25s ease" }}>
+          {q.type === "select" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {q.options.map(optionBtn)}
+            </div>
+          )}
+
+          {q.type === "multi" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {q.options.map(optionBtn)}
+            </div>
+          )}
+
+          {q.type === "state" && (
+            <div style={{ position: "relative" }}>
+              <input
+                className="qz-input"
+                value={stateDisplay}
+                placeholder="Type to search your state..."
+                onFocus={() => setShowList(true)}
+                onChange={(e) => { setSearch(e.target.value); setShowList(true); }}
+                onBlur={() => setTimeout(() => setShowList(false), 150)}
+              />
+              {selected && (
+                <div style={{ fontSize: 12.5, color: "var(--accent2)", marginTop: 8 }}>
+                  Selected: {selected}
+                </div>
+              )}
+              {showList && (
+                <div className="qz-state-list">
+                  {filteredStates.length === 0 && (
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", padding: "10px 4px" }}>
+                      No matching state found.
+                    </div>
+                  )}
+                  {filteredStates.map(s => (
+                    <button key={s} className="quiz-opt"
+                      onMouseDown={(e) => { e.preventDefault(); choose(q.id, s); setSearch(s); setShowList(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "11px 14px", border: "1.5px solid rgba(255,255,255,0.1)",
+                        borderRadius: 10, background: selected === s ? "rgba(232,80,10,0.15)" : "rgba(255,255,255,0.04)",
+                        cursor: "pointer", transition: "all 0.18s", textAlign: "left", color: "#fff", fontSize: 14,
+                        borderColor: selected === s ? "var(--accent)" : undefined,
+                      }}>
+                      <span>{s}</span>
+                      {selected === s && <Icon name="check" size={15} color="#E8500A" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {q.type === "date" && (
+            <div>
+              <input
+                type="date"
+                className="qz-input"
+                value={selected || ""}
+                max={todayStr}
+                onChange={(e) => choose(q.id, e.target.value)}
+              />
+              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)", marginTop: 8 }}>
+                You can change this later at any time.
               </div>
-              <Icon name="chevronRight" size={16} color="rgba(255,255,255,0.35)" />
+            </div>
+          )}
+        </div>
+
+        {/* Nav */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 26 }}>
+          {!isFirst && (
+            <button onClick={goBack} style={{
+              padding: "10px 18px", background: "transparent", color: "rgba(255,255,255,0.6)",
+              border: "1.5px solid rgba(255,255,255,0.14)", borderRadius: 10, fontSize: 13.5,
+              fontWeight: 600, cursor: "pointer", transition: "all 0.18s",
+            }}>
+              Back
             </button>
-          ))}
+          )}
+          <button onClick={goNext} disabled={!ready} style={{
+            flex: 1, padding: "12px 18px", background: "var(--accent)", color: "#fff",
+            border: "none", borderRadius: 10, fontSize: 14.5, fontWeight: 700, cursor: "pointer",
+            opacity: ready ? 1 : 0.45, transition: "all 0.18s",
+          }}>
+            {step === visible.length - 1 ? "Finish →" : "Continue →"}
+          </button>
         </div>
       </div>
 
@@ -955,17 +1197,85 @@ const AIPage = ({ tasks, setTasks }) => {
   const [added, setAdded] = useState(false);
   const [error, setError] = useState("");
 
+  const [file, setFile] = useState(null);
+  const [fileError, setFileError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const ACCEPTED_TYPES = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "text/rtf",
+    "application/rtf",
+  ];
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+  const formatBytes = (bytes) => {
+    if (!bytes && bytes !== 0) return "";
+    const units = ["B", "KB", "MB", "GB"];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  };
+
+  const extractFileText = (f) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => resolve("");
+      reader.readAsText(f);
+    });
+
+  const handleFile = (f) => {
+    if (!f) return;
+    const isAllowed = [...ACCEPTED_TYPES, "application/octet-stream"].includes(f.type) ||
+      /\.(pdf|doc|docx|txt|rtf)$/i.test(f.name);
+    if (!isAllowed) {
+      setFile(null);
+      setFileError("Unsupported file type. Please upload a PDF, Word (.doc/.docx), Text (.txt), or Rich Text (.rtf) file.");
+      setResult(null);
+      return;
+    }
+    if (f.size > MAX_FILE_SIZE) {
+      setFile(null);
+      setFileError("File is too large. The maximum allowed size is 10 MB.");
+      setResult(null);
+      return;
+    }
+    setFile(f);
+    setFileError("");
+    setResult(null);
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    setFileError("");
+    setResult(null);
+  };
+
   const analyze = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() && !file) return;
 
     setLoading(true);
     setResult(null);
     setAdded(false);
     setError("");
+    setFileError("");
 
     try {
+      let legalText = input;
+      if (!legalText.trim() && file) {
+        legalText = await extractFileText(file);
+        if (!legalText.trim()) {
+          setError("Unable to read the selected document. Please paste the text manually and try again.");
+          setLoading(false);
+          return;
+        }
+      }
+
       const res = await API.post("/api/ai/simplify", {
-        legalText: input,
+        legalText,
       });
 
       console.log("AI RAW RESPONSE:", res.data);
@@ -1043,9 +1353,106 @@ const AIPage = ({ tasks, setTasks }) => {
         }}
       />
 
+      {/* Divider */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 12px" }}>
+        <div style={{ flex: 1, height: 1, background: "#E5E7EB" }} />
+        <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>
+          or upload a document
+        </span>
+        <div style={{ flex: 1, height: 1, background: "#E5E7EB" }} />
+      </div>
+
+      {/* Upload area */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt,.rtf,application/pdf,application/msword,text/plain,text/rtf,application/rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        style={{ display: "none" }}
+        onChange={(e) => { handleFile(e.target.files && e.target.files[0]); e.target.value = ""; }}
+      />
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files && e.dataTransfer.files[0]); }}
+        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+        style={{
+          border: `1.5px dashed ${fileError ? "#F87171" : dragOver ? "#5B21B6" : "#CBD5E1"}`,
+          background: dragOver ? "#F5F0FF" : file ? "#F9FAFB" : "#FAFAF9",
+          borderRadius: 10,
+          padding: "20px 16px",
+          textAlign: "center",
+          cursor: "pointer",
+          transition: "all 0.15s",
+          marginBottom: 12,
+        }}
+      >
+        {file ? (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Icon name="fileText" size={18} color="#5B21B6" />
+              <span style={{ fontWeight: 600, fontSize: 14, wordBreak: "break-word" }}>{file.name}</span>
+            </div>
+            <div style={{ fontSize: 12.5, color: "#6B7280", margin: "6px 0 12px" }}>{formatBytes(file.size)}</div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); fileInputRef.current && fileInputRef.current.click(); }}
+                style={{
+                  padding: "7px 14px", background: "#FFF", color: "#5B21B6", border: "1px solid #5B21B6",
+                  borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); removeFile(); }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px",
+                  background: "#FEE2E2", color: "#B91C1C", border: "none", borderRadius: 6,
+                  fontSize: 13, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                <Icon name="trash" size={14} /> Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <Icon name="fileText" size={28} color="#9CA3AF" />
+            <div style={{ fontWeight: 600, fontSize: 14, marginTop: 8 }}>Drag & drop your document here</div>
+            <div style={{ fontSize: 12.5, color: "#6B7280", marginTop: 2 }}>
+              or click to browse · PDF, Word, TXT, RTF · max 10 MB · single file
+            </div>
+            <div
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7, marginTop: 14,
+                padding: "9px 18px", background: "#5B21B6", color: "#fff", borderRadius: 6,
+                fontSize: 13.5, fontWeight: 600,
+              }}
+            >
+              Upload Document
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Upload error */}
+      {fileError && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: "#FEF2F2", border: "1px solid #FECACA",
+          color: "#B91C1C", padding: "10px 12px", borderRadius: 6,
+          marginBottom: 12, fontSize: 13, fontWeight: 600,
+        }}>
+          <Icon name="alertTriangle" size={15} color="#B91C1C" />
+          {fileError}
+        </div>
+      )}
+
       <button
         onClick={analyze}
-        disabled={loading || !input.trim()}
+        disabled={loading || (!input.trim() && !file)}
         style={{
           padding: "10px 18px",
           background: "#5B21B6",
@@ -1053,6 +1460,7 @@ const AIPage = ({ tasks, setTasks }) => {
           border: "none",
           borderRadius: 6,
           cursor: "pointer",
+          opacity: loading || (!input.trim() && !file) ? 0.6 : 1,
           marginBottom: 20,
         }}
       >
@@ -1329,7 +1737,8 @@ const submit = async () => {
         </div>
         <div style={{ marginBottom: 22 }}>
           <label style={{ fontSize: 12.5, color: "rgba(255,255,255,0.5)", display: "block", marginBottom: 6 }}>Password</label>
-          <input type="password" style={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••"
+          <PasswordInput inputStyle={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••"
+            autoComplete={tab === "login" ? "current-password" : "new-password"}
             onFocus={e => e.target.style.borderColor = "var(--accent)"}
             onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.12)"} />
         </div>
@@ -1363,14 +1772,90 @@ const submit = async () => {
 };
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
-const makeDefaultTasks = (stage) => {
-  const today = new Date();
-  return (STAGE_TASKS[stage] || STAGE_TASKS["pre-revenue"]).map((t, i) => ({
-    ...t,
-    id: i + 1,
-    completed: i < 1,
-    deadline: new Date(today.getTime() + t.daysFromNow * 86400000).toISOString().split("T")[0],
-  }));
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+
+const classifyTask = (task) => {
+  const t = `${task.title || ""} ${task.category || ""}`.toLowerCase();
+  if (/aoc|roc|mgt|annual|yearly|statutory auditor|transfer pricing/.test(t)) return "annual";
+  if (/gst|gstr|tds|return|filing|monthly|advance tax|payroll|pf\/esi|\bpf\b|\besi\b/.test(t)) return "recurring";
+  if (/incorporat|register|registrat|formation|structure|pan|tan|bank account|bank acc|dsc|din|udyam|msme|startup india/.test(t)) return "formation";
+  if (/trademark|\bip\b|nda|agreement|contract|shareholder|privacy|policy|terms|esop|offer letter/.test(t)) return "document";
+  return "general";
+};
+
+const riskForDays = (daysLeft) => {
+  if (daysLeft < 0 || daysLeft <= 14) return "high";
+  if (daysLeft <= 60) return "medium";
+  return "low";
+};
+
+const iso = (d) => d.toISOString().split("T")[0];
+const DOC_OFF = [7, 14, 21, 30, 45, 60, 75, 90];
+const GEN_OFF = [15, 30, 45, 60, 75, 90, 120];
+const RECUR_DAY = [7, 11, 20, 25];
+
+const makeDefaultTasks = (profile) => {
+  const stage = (profile && profile.stage) || "pre-revenue";
+  const now = today0();
+  const registered = !!(profile && profile.legalStatus && profile.legalStatus !== "no");
+  const regDate = registered && profile.registrationDate
+    ? (() => { const d = new Date(profile.registrationDate); d.setHours(0, 0, 0, 0); return d; })()
+    : null;
+  const businessAge = regDate ? Math.max(Math.round((now - regDate) / 86400000), 0) : 0;
+
+  const base = STAGE_TASKS[stage] || STAGE_TASKS["pre-revenue"];
+  const items = base.map((t, i) => ({ ...t, kind: classifyTask(t), idx: i }));
+  if (!registered) {
+    items.sort((a, b) => {
+      const pa = a.kind === "formation" ? 0 : 1;
+      const pb = b.kind === "formation" ? 0 : 1;
+      return pa !== pb ? pa - pb : a.idx - b.idx;
+    });
+  }
+
+  let f = 0, r = 0, d = 0, g = 0, a = 0;
+
+  return items.map((t, i) => {
+    let due;
+    switch (t.kind) {
+      case "formation":
+        due = !registered ? addDays(now, 3 + Math.min(f, 4))
+          : businessAge < 60 ? addDays(now, 5 + f * 3)
+          : addDays(now, 15 + f * 7);
+        f++;
+        break;
+      case "recurring": {
+        const dd = RECUR_DAY[r % RECUR_DAY.length];
+        due = new Date(now.getFullYear(), now.getMonth(), dd);
+        if (Math.round((due - now) / 86400000) > 15) due = new Date(now.getFullYear(), now.getMonth() - 1, dd);
+        r++;
+        break;
+      }
+      case "annual":
+        due = regDate ? addDays(regDate, 365 * (a + 1)) : addDays(now, 180 + a * 60);
+        a++;
+        break;
+      case "document":
+        due = addDays(now, DOC_OFF[d % DOC_OFF.length]);
+        d++;
+        break;
+      default:
+        due = addDays(now, GEN_OFF[g % GEN_OFF.length]);
+        g++;
+        break;
+    }
+    const daysLeft = Math.round((due - now) / 86400000);
+    if (daysLeft < -30) due = addDays(now, -3);
+
+    return {
+      ...t,
+      id: i + 1,
+      completed: i < 1,
+      deadline: iso(due),
+      risk: riskForDays(Math.round((due - now) / 86400000)),
+    };
+  });
 };
 
 const taskFromApi = (c) => ({
@@ -1412,16 +1897,27 @@ function BrandSecureApp() {
     try {
       const res = await API.post("/api/onboarding", {
         businessType: answers.q2 || "",
-        state: "",
+        state: answers.state || "",
         employees: answers.q3 || "",
         revenueStage: answers.q1 || "pre-revenue",
+        funding: answers.q4 || "",
+        businessStart: answers.q5 || "",
+        registrationDate: answers.registerDate || "",
+        industry: answers.industry || "",
+        assets: Array.isArray(answers.assets) ? answers.assets : [],
+        goal: answers.goal || "",
       });
       setTasks((res.data?.tasks || []).map(taskFromApi));
       setStage(answers.q1 || "pre-revenue");
       setScreen("app");
     } catch (err) {
       console.error("ONBOARDING ERROR:", err);
-      setTasks(makeDefaultTasks(answers.q1 || "pre-revenue"));
+      setTasks(makeDefaultTasks({
+        stage: answers.q1 || "pre-revenue",
+        legalStatus: answers.q2 || "",
+        registrationDate: answers.registerDate || "",
+        businessStart: answers.q5 || "",
+      }));
       setStage(answers.q1 || "pre-revenue");
       setScreen("app");
     }
@@ -1448,7 +1944,7 @@ function BrandSecureApp() {
       <GlobalStyle />
       <div style={{ display: "flex", minHeight: "100vh" }}>
         <Sidebar page={page} setPage={setPage} stage={stage} onLogout={handleLogout} />
-        <main style={{ marginLeft: 230, flex: 1, minHeight: "100vh", background: "var(--surface)" }}>
+        <main style={{ marginLeft: 256, flex: 1, minHeight: "100vh", background: "var(--surface)" }}>
           <Topbar {...pageConfig} tasks={tasks} />
           {page === "dashboard" && <Dashboard tasks={tasks} setTasks={setTasks} stage={stage} setPage={setPage} />}
           {page === "tasks"     && <TasksPage tasks={tasks} setTasks={setTasks} stage={stage} />}

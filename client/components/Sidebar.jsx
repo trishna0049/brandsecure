@@ -6,20 +6,24 @@ const Sidebar = ({ page, setPage, stage, onLogout }) => {
   const stageInfo = STAGE_LABELS[stage] || STAGE_LABELS["pre-revenue"];
   return (
     <aside style={{
-      width: 230, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 100,
+      width: 256, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 100,
       background: "var(--ink)", display: "flex", flexDirection: "column",
       padding: "28px 0 24px",
     }}>
       {/* Logo */}
       <div style={{ padding: "0 22px 24px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minWidth: 0 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, background: "var(--accent)",
             display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
           }}>
             <Icon name="shield" size={20} color="#fff" />
           </div>
-          <span style={{ fontFamily: "var(--ff-head)", fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: -0.5 }}>
+          <span style={{
+            fontFamily: "var(--ff-head)", fontWeight: 800, fontSize: 18, color: "#fff", letterSpacing: -0.5,
+            minWidth: 0, whiteSpace: "nowrap",
+          }}>
             Brand<span style={{ color: "var(--accent)" }}>Secure</span>
           </span>
         </div>

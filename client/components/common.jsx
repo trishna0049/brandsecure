@@ -133,6 +133,8 @@ export const Icon = ({ name, size = 18, color = "currentColor" }) => {
     sparkles: <><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"/></>,
     layers: <><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>,
     award: <><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></>,
+    eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+    eyeOff: <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -169,6 +171,39 @@ export const Btn = ({ children, variant = "primary", onClick, style = {}, icon, 
       {icon && <Icon name={icon} size={size === "sm" ? 14 : 16} />}
       {children}
     </button>
+  );
+};
+
+// ─── PASSWORD INPUT ───────────────────────────────────────────────────────────
+export const PasswordInput = ({ inputStyle = {}, value, onChange, placeholder, onFocus, onBlur, id, name, autoComplete, iconColor = "rgba(255,255,255,0.45)" }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        id={id}
+        name={name}
+        autoComplete={autoComplete}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        style={{ ...inputStyle, padding: "11px 42px 11px 14px" }}
+      />
+      <button
+        type="button"
+        aria-label={show ? "Hide password" : "Show password"}
+        onClick={() => setShow(s => !s)}
+        style={{
+          position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+          background: "none", border: "none", padding: 6, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          lineHeight: 0,
+        }}>
+        <Icon name={show ? "eyeOff" : "eye"} size={17} color={iconColor} />
+      </button>
+    </div>
   );
 };
 
